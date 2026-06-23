@@ -58,13 +58,14 @@ class Exp_Classification(Exp_Basic):
         trues = []
         self.model.eval()
         with torch.no_grad():
-            for i, (batch_x_cwt, batch_x_another,label) in enumerate(vali_loader):
+            for i, (batch_x_cwt, batch_x_rocket, batch_x_raw, label) in enumerate(vali_loader):
                 batch_x_cwt = batch_x_cwt.float().to(self.device)
-                batch_x_another =batch_x_another.float().to(self.device)
+                batch_x_rocket = batch_x_rocket.float().to(self.device)
+                batch_x_raw = batch_x_raw.float().to(self.device)
 
                 label = label.to(self.device)
 
-                outputs = self.model(batch_x_cwt,batch_x_another)  
+                outputs = self.model(batch_x_cwt,batch_x_rocket,batch_x_raw)  
                 loss = criterion(outputs, label.long().squeeze())
 
                 total_loss.append(loss.item())
@@ -108,19 +109,20 @@ class Exp_Classification(Exp_Basic):
             self.model.train()
             epoch_time = time.time()
 
-            for i, (batch_x_cwt,batch_x_another, label) in enumerate(train_loader):
+            for i, (batch_x_cwt,batch_x_rocket, batch_x_raw, label) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
 
                 batch_x_cwt = batch_x_cwt.float().to(self.device)
-                batch_x_another =batch_x_another.float().to(self.device)
+                batch_x_rocket = batch_x_rocket.float().to(self.device)
+                batch_x_raw = batch_x_raw.float().to(self.device)
 
                 label = label.to(self.device)
                 # print(batch_x.shape)
                 # print(label.shape)
                 
 
-                outputs = self.model(batch_x_cwt,batch_x_another)
+                outputs = self.model(batch_x_cwt,batch_x_rocket,batch_x_raw)
                 # print(outputs.shape)
                 loss = criterion(outputs, label.long().squeeze(-1))
                 train_loss.append(loss.item())
@@ -168,14 +170,15 @@ class Exp_Classification(Exp_Basic):
        
         self.model.eval()
         with torch.no_grad():
-            for i, (batch_x_cwt,batch_x_another, label) in enumerate(test_loader):
+            for i, (batch_x_cwt,batch_x_rocket, batch_x_raw, label) in enumerate(test_loader):
 
                 batch_x_cwt = batch_x_cwt.float().to(self.device)
-                batch_x_another =batch_x_another.float().to(self.device)
+                batch_x_rocket = batch_x_rocket.float().to(self.device)
+                batch_x_raw = batch_x_raw.float().to(self.device)
 
                 label = label.to(self.device)
 
-                outputs = self.model(batch_x_cwt,batch_x_another)
+                outputs = self.model(batch_x_cwt,batch_x_rocket,batch_x_raw)
 
                 preds.append(outputs.detach())
                 trues.append(label)
@@ -212,6 +215,7 @@ class Exp_Classification(Exp_Basic):
         temp_df['no_rocket']=[self.args.no_rocket]
         temp_df['max_pooling']=[self.args.max_pooling]
         temp_df['half_rocket']=[self.args.half_rocket]
+        temp_df['temporal_gate']=['dynamic_channel']
         temp_df['additive_fusion']=[self.args.additive_fusion]
         temp_df['only_forward_scan']=[self.args.only_forward_scan]
         temp_df['reverse_flip']=[self.args.reverse_flip]

@@ -38,7 +38,6 @@ python -u run.py \
     --des 'Exp' \
     --lradj 'cosine' \
     --comment 'Max pooling after Mambas' \
-    --no_rocket 1 \
     --additive_fusion 1 \
     --max_pooling 1 \
     --train_epochs 200\

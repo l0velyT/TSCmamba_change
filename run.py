@@ -89,9 +89,9 @@ if __name__ == '__main__':
     parser.add_argument('--num_mambas',type=int,default=1,help='Number of Mambas')
     parser.add_argument('--channel_token_mixing',type=int,default=0,help='Mixed features from channel and token for rocket')
     parser.add_argument('--initial_focus',type=float,default=1.0,help='Initial focus parameter')
-    parser.add_argument('--no_rocket',type=int,default=0,help='Switch between rocket/FFN features')
+    parser.add_argument('--no_rocket',type=int,default=0,help='Deprecated for classification; MLP and ROCKET temporal features are fused by dynamic channel gates')
     parser.add_argument('--max_pooling',type=int,default=0,help='avg pooling or max pooling')
-    parser.add_argument('--half_rocket',type=int,default=0,help='half_rocket and half mlp features')
+    parser.add_argument('--half_rocket',type=int,default=0,help='Deprecated for classification; MLP and ROCKET temporal features are fused by dynamic channel gates')
     parser.add_argument('--additive_fusion',type=int,default=1,help='Either to use additive fusion or multiplicative fusion')
     parser.add_argument('--only_forward_scan',type=int,default=0,help='Only forward scan without reverse scan')
     parser.add_argument('--reverse_flip',type=int,default=0,help='reverse scan with flipped addition')
@@ -193,6 +193,7 @@ if __name__ == '__main__':
             torch.cuda.empty_cache()
     else:
         ii = 0
+        exp = Exp(args)  # set experiments before building the classification checkpoint name
         setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}_dr_{}_dst_{}_dconv_{}_efact_{}_mambas_{}_run_{}'.format(
                 args.task_name,
                 args.model_id,
@@ -219,7 +220,6 @@ if __name__ == '__main__':
                 args.num_mambas,
                 args.cur_run)
 
-        exp = Exp(args)  # set experiments
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
         exp.test(setting, test=1)
         torch.cuda.empty_cache()

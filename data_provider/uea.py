@@ -22,72 +22,27 @@ def collate_fn(data, max_len=None,no_rocket=0,half_rocket=0):
         padding_masks: (batch_size, padded_length) boolean tensor, 1 means keep vector at this position, 0 means padding
     """
 
-    if no_rocket==0:
-        # If there are rocket features
-        if half_rocket==0:
-            # Full rocket features
-            batch_size = len(data)
-            x_cwt,x_rocket, labels = zip(*data)
+    batch_size = len(data)
+    x_cwt, x_rocket, features, labels = zip(*data)
 
-        
-            # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
+    XCWT = torch.zeros(batch_size, x_cwt[0].shape[0], x_cwt[0].shape[1], x_cwt[0].shape[1])
+    XROCKET = torch.zeros(batch_size, x_rocket[0].shape[0], x_rocket[0].shape[1])
 
-            XCWT = torch.zeros(batch_size, x_cwt[0].shape[0], x_cwt[0].shape[1], x_cwt[0].shape[1])  # (batch_size,feat_dim,resize_scale,resize_scale)
-            XROCKET = torch.zeros(batch_size, x_rocket[0].shape[0],x_rocket[0].shape[1])  # (batch_size,feat_dim,projected_dim)
-            
-            for i in range(batch_size):
-                XCWT[i,:,:,:]=x_cwt[i]
-            for i in range(batch_size):
-                XROCKET[i,:,:]=x_rocket[i]
+    for i in range(batch_size):
+        XCWT[i, :, :, :] = x_cwt[i]
+        XROCKET[i, :, :] = x_rocket[i]
 
-            targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
+    lengths = [X.shape[0] for X in features]
+    if max_len is None:
+        max_len = max(lengths)
+    XRAW = torch.zeros(batch_size, max_len, features[0].shape[-1])
+    for i in range(batch_size):
+        end = min(lengths[i], max_len)
+        XRAW[i, :end, :] = features[i][:end, :]
+    XRAW = torch.permute(XRAW, (0, 2, 1))  # B,D,L
 
-            return XCWT,XROCKET, targets
-        else:
-            # Half-rocket Half-MLP
-            batch_size = len(data)
-            x_cwt,x_rocket,features, labels = zip(*data)
-
-        
-            # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
-
-            XCWT = torch.zeros(batch_size, x_cwt[0].shape[0], x_cwt[0].shape[1], x_cwt[0].shape[1])  # (batch_size,feat_dim,resize_scale,resize_scale)
-            XROCKET = torch.zeros(batch_size, x_rocket[0].shape[0],x_rocket[0].shape[1])  # (batch_size,feat_dim,projected_dim)
-            
-            for i in range(batch_size):
-                XCWT[i,:,:,:]=x_cwt[i]
-            for i in range(batch_size):
-                XROCKET[i,:,:]=x_rocket[i]
-            lengths = [X.shape[0] for X in features]  # original sequence length for each time series
-            if max_len is None:
-                    max_len = max(lengths)
-            X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
-            for i in range(batch_size):
-                end = min(lengths[i], max_len)
-                X[i, :end, :] = features[i][:end, :]
-            X= torch.permute(X,(0,2,1)) #B,D,L
-            # print("Raw features in collate fn: ",X.shape)
-            targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
-            Rocket_and_RAW=torch.zeros(batch_size, x_rocket[0].shape[0],x_rocket[0].shape[1]+X.shape[2])#B,D,Projected_space+L
-            Rocket_and_RAW=torch.cat([XROCKET,X],dim=2)
-
-            return XCWT,Rocket_and_RAW, targets            
-    elif no_rocket==1:
-        batch_size = len(data)
-        x_cwt,features, labels = zip(*data)
-        XCWT = torch.zeros(batch_size, x_cwt[0].shape[0], x_cwt[0].shape[1], x_cwt[0].shape[1])  # (batch_size,feat_dim,resize_scale,resize_scale)
-        for i in range(batch_size):
-            XCWT[i,:,:,:]=x_cwt[i]
-        targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
-        lengths = [X.shape[0] for X in features]  # original sequence length for each time series
-        if max_len is None:
-                max_len = max(lengths)
-        X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
-        for i in range(batch_size):
-            end = min(lengths[i], max_len)
-            X[i, :end, :] = features[i][:end, :]
-        X= torch.permute(X,(0,2,1)) #B,D,L
-        return XCWT,X,targets
+    targets = torch.stack(labels, dim=0)
+    return XCWT, XROCKET, XRAW, targets
 
 
 class Normalizer(object):
