@@ -1,16 +1,13 @@
 import os
 import torch
-from models import TSCMamba,DirectMamba,BiMamba
+from models import TSCMamba
 
 
 class Exp_Basic(object):
     def __init__(self, args):
         self.args = args
         self.model_dict = {
-            'TSCMamba':TSCMamba,
-            'Mamba':DirectMamba,
-            'BiMamba':BiMamba
-            
+            'TSCMamba': TSCMamba,
         }
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
