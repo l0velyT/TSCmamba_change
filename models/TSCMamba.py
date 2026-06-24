@@ -23,11 +23,6 @@ class Model(torch.nn.Module):
                 im_size=self.configs.rescale_size,
                 patch_size=self.configs.patch_size)
             self.projector=torch.nn.Linear(self.configs.seq_len,self.configs.projected_space)
-            self.temporal_gate=torch.nn.Sequential(
-                torch.nn.Linear(self.configs.projected_space*2,self.configs.projected_space),
-                torch.nn.GELU(),
-                torch.nn.Linear(self.configs.projected_space,1)
-            )
 
             self.ln=torch.nn.LayerNorm(self.configs.projected_space*3)
             self.dropout=torch.nn.Dropout(self.configs.dropout)
@@ -56,10 +51,15 @@ class Model(torch.nn.Module):
 
     def classification(self,x_cwt,batch_x_rocket,batch_x_raw):    
         x_patched=self.patcher(x_cwt)
-        x_mlp=self.projector(batch_x_raw)
-        x_rocket=batch_x_rocket
-        gate=torch.sigmoid(self.temporal_gate(torch.cat([x_mlp,x_rocket],dim=2)))
-        x_projected=(gate*x_mlp)+((1.0-gate)*x_rocket)
+        if self.configs.no_rocket==1:
+            x_projected=self.projector(batch_x_raw)
+        elif self.configs.half_rocket==0:
+            x_projected=batch_x_rocket
+        else:
+            x_mlp=self.projector(batch_x_raw)
+            x_projected=torch.cat([batch_x_rocket[:,:,:self.configs.projected_space//2],
+                                   x_mlp[:,:,self.configs.projected_space//2:]
+                                ],dim=2)
         if self.configs.additive_fusion==1:
             x_fused=(self.learnable_focus*x_projected)+(2.0-self.learnable_focus)*x_patched
         else:

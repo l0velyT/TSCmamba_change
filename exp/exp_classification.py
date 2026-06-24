@@ -215,7 +215,15 @@ class Exp_Classification(Exp_Basic):
         temp_df['no_rocket']=[self.args.no_rocket]
         temp_df['max_pooling']=[self.args.max_pooling]
         temp_df['half_rocket']=[self.args.half_rocket]
-        temp_df['temporal_gate']=['dynamic_channel']
+        if self.args.model == 'MSUF_TSCMamba':
+            temporal_gate = 'none_msuf'
+        elif self.args.no_rocket == 1:
+            temporal_gate = 'disabled_mlp'
+        elif self.args.half_rocket == 1:
+            temporal_gate = 'disabled_half_rocket_mlp'
+        else:
+            temporal_gate = 'disabled_rocket'
+        temp_df['temporal_gate']=[temporal_gate]
         temp_df['additive_fusion']=[self.args.additive_fusion]
         temp_df['only_forward_scan']=[self.args.only_forward_scan]
         temp_df['reverse_flip']=[self.args.reverse_flip]
