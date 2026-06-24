@@ -56,6 +56,7 @@ def data_provider(args, flag):
         return data_set, data_loader
     elif args.task_name == 'classification':
         drop_last = False
+        load_auxiliary_features = args.model != 'MSUF_TSCMamba'
         data_set = Data(
             root_path=args.root_path,
             flag=flag,
@@ -65,7 +66,8 @@ def data_provider(args, flag):
             channel_token_mixing=args.channel_token_mixing,
             no_rocket=args.no_rocket,
             half_rocket=args.half_rocket,
-            variation=args.variation
+            variation=args.variation,
+            load_auxiliary_features=load_auxiliary_features
         )
 
         data_loader = DataLoader(

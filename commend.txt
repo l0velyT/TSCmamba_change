@@ -1,38 +1,37 @@
-python -u run.py \
+/home/zyt/miniconda3/envs/tscmamba/bin/python -u run.py \
   --task_name classification \
   --random_seed 2024 \
   --is_training 1 \
-  --root_path ./datasets/PEMS-SF \
-  --model_id PEMS-SF \
-  --model TSCMamba \
+  --root_path ./datasets/SpokenArabicDigits \
+  --model_id SpokenArabicDigits \
+  --model MSUF_TSCMamba \
   --data UEA \
   --dropout 0.2 \
+  --d_model 512 \
   --dconv 4 \
   --d_state 128 \
   --e_fact 2 \
-  --projected_space 64 \
   --num_mambas 1 \
   --des Exp \
   --lradj cosine \
-  --comment "Avg pooling after Mambas" \
-  --no_rocket 0 \
-  --additive_fusion 1 \
+  --comment "MSUF input fusion" \
   --max_pooling 0 \
-  --train_epochs 200 \
+  --train_epochs 100 \
   --itr 1 \
   --batch_size 32 \
   --learning_rate 0.0001 \
   --devices 0
 
-python -u run.py \
+  /home/zyt/miniconda3/envs/tscmamba/bin/python -u run.py \
   --task_name classification \
   --random_seed 2024 \
   --is_training 1 \
-  --root_path ./datasets/PEMS-SF \
-  --model_id PEMS-SF \
+  --root_path ./datasets/SpokenArabicDigits \
+  --model_id SpokenArabicDigits \
   --model TSCMamba \
   --data UEA \
   --dropout 0.2 \
+  --d_model 512 \
   --dconv 4 \
   --d_state 128 \
   --e_fact 2 \
@@ -40,11 +39,38 @@ python -u run.py \
   --num_mambas 1 \
   --des Exp \
   --lradj cosine \
-  --comment 'Dynamic channel temporal gate/avg pool' \
+  --comment "TSCMamba MLP only no ROCKET" \
   --additive_fusion 1 \
   --max_pooling 0 \
-  --train_epochs 200 \
+  --no_rocket 1 \
+  --half_rocket 0 \
+  --train_epochs 70 \
   --itr 1 \
   --batch_size 32 \
   --learning_rate 0.0001 \
-   --devices 0
+  --devices 0
+
+
+  /home/zyt/miniconda3/envs/tscmamba/bin/python -u run.py \
+  --task_name classification \
+  --random_seed 2024 \
+  --is_training 1 \
+  --root_path ./datasets/SpokenArabicDigits \
+  --model_id SpokenArabicDigits \
+  --model MSUF_TSCMamba \
+  --data UEA \
+  --dropout 0.2 \
+  --d_model 512 \
+  --dconv 4 \
+  --d_state 128 \
+  --e_fact 2 \
+  --num_mambas 1 \
+  --des Exp \
+  --lradj cosine \
+  --comment "PDM-style MSUF input fusion" \
+  --max_pooling 0 \
+  --train_epochs 100 \
+  --itr 1 \
+  --batch_size 32 \
+  --learning_rate 0.0001 \
+  --devices 0

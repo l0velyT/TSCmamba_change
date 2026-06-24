@@ -617,13 +617,14 @@ class UEAloader(Dataset):
             (Moreover, script argument overrides this attribute)
     """
 
-    def __init__(self, root_path, file_list=None, limit_size=None, flag=None,rescale_size=64,wt_name='morl',projected_space=256,channel_token_mixing=0,no_rocket=1,half_rocket=0,variation=64):
+    def __init__(self, root_path, file_list=None, limit_size=None, flag=None,rescale_size=64,wt_name='morl',projected_space=256,channel_token_mixing=0,no_rocket=1,half_rocket=0,variation=64,load_auxiliary_features=True):
         self.root_path = root_path
         # Deprecated compatibility flags: classification always returns both
         # ROCKET and raw features for dynamic temporal soft gating.
         self.no_rocket=no_rocket
         self.half_rocket=half_rocket
         self.variation=variation
+        self.load_auxiliary_features=load_auxiliary_features
 
         if os.path.exists(self.root_path+'/'+flag+'_feature_df.csv') and os.path.exists(self.root_path+'/'+flag+'_labels_df.csv'):
             self.feature_df=pd.read_csv(self.root_path+'/'+flag+'_feature_df.csv',index_col=0)
@@ -657,28 +658,37 @@ class UEAloader(Dataset):
             self.labels_df.to_csv(self.root_path+'/'+flag+'_labels_df.csv',index=True)
 
              
-        if os.path.exists(f"{self.root_path}/{flag}_{str(self.variation)+'_' if self.variation!=64 else ''}{str(rescale_size)}_.npy") == False:
-            self.X_cwt = np.ndarray(shape=(len(self.all_IDs), self.feature_df.shape[1], rescale_size, rescale_size), dtype = 'float32')
-            for sample in range(len(self.all_IDs)):
-                series=np.array(self.feature_df.loc[self.all_IDs[sample]].values)#L,D
-                for signal in range(self.feature_df.shape[1]):
-                    coeffs, freqs = pywt.cwt(series[:, signal], self.variation, wt_name)
-                    rescale_coeffs = resize(coeffs, (rescale_size, rescale_size), mode = 'constant')
-                    self.X_cwt[sample,signal,:,:] = rescale_coeffs
-            np.save(f"{self.root_path}/{flag}_{str(self.variation)+'_' if self.variation!=64 else ''}{str(rescale_size)}_.npy",self.X_cwt)
-            # print(self.X_cwt.shape)
-        else:
-            self.X_cwt=np.load(f"{self.root_path}/{flag}_{str(self.variation)+'_' if self.variation!=64 else ''}{str(rescale_size)}_.npy")
-            # print(self.X_cwt.shape)
+        if self.load_auxiliary_features:
+            if os.path.exists(f"{self.root_path}/{flag}_{str(self.variation)+'_' if self.variation!=64 else ''}{str(rescale_size)}_.npy") == False:
+                self.X_cwt = np.ndarray(shape=(len(self.all_IDs), self.feature_df.shape[1], rescale_size, rescale_size), dtype = 'float32')
+                for sample in range(len(self.all_IDs)):
+                    series=np.array(self.feature_df.loc[self.all_IDs[sample]].values)#L,D
+                    for signal in range(self.feature_df.shape[1]):
+                        coeffs, freqs = pywt.cwt(series[:, signal], self.variation, wt_name)
+                        rescale_coeffs = resize(coeffs, (rescale_size, rescale_size), mode = 'constant')
+                        self.X_cwt[sample,signal,:,:] = rescale_coeffs
+                np.save(f"{self.root_path}/{flag}_{str(self.variation)+'_' if self.variation!=64 else ''}{str(rescale_size)}_.npy",self.X_cwt)
+                # print(self.X_cwt.shape)
+            else:
+                self.X_cwt=np.load(f"{self.root_path}/{flag}_{str(self.variation)+'_' if self.variation!=64 else ''}{str(rescale_size)}_.npy")
+                # print(self.X_cwt.shape)
         # Data normalization
         
         print("Max sequence length: ",self.max_seq_len)
         normalizer = Normalizer()
         self.feature_df = normalizer.normalize(self.feature_df)
-        self.X_cwt=(self.X_cwt-np.min(self.X_cwt))/(np.max(self.X_cwt)-np.min(self.X_cwt))
-        print("Min CWT:",np.min(self.X_cwt))
-        print("Max CWT: ",np.max(self.X_cwt))
+        if self.load_auxiliary_features:
+            self.X_cwt=(self.X_cwt-np.min(self.X_cwt))/(np.max(self.X_cwt)-np.min(self.X_cwt))
+            print("Min CWT:",np.min(self.X_cwt))
+            print("Max CWT: ",np.max(self.X_cwt))
+        else:
+            self.X_cwt=np.zeros(shape=(len(self.all_IDs), 1, 1, 1), dtype='float32')
+            self.rocket_features=np.zeros(shape=(len(self.all_IDs), 1, 1), dtype='float32')
+            print("Skipping CWT and ROCKET features for MSUF_TSCMamba")
         print(flag+" :Dataset shape: ",self.feature_df.shape)
+
+        if not self.load_auxiliary_features:
+            return
 
         if os.path.exists(self.root_path+'/'+flag+'_x_all.npy')==False:
             X_all_np = np.zeros(shape=(len(self.all_IDs), self.feature_df.shape[1], self.max_seq_len), dtype='float32')
